@@ -10,6 +10,7 @@
   video{width:100%;height:100%;object-fit:contain;background:black}
   #badge{position:absolute;left:10px;top:10px;background:#07182dbb;color:#cce7ff;padding:6px 10px;border:1px solid #367ec0;font-size:12px;pointer-events:none}
   #notice{position:absolute;bottom:12px;left:10px;right:10px;text-align:center;background:#000b;padding:8px;font-size:13px;pointer-events:none}
+  #sound{position:absolute;right:10px;top:10px;background:#103c70;color:#fff;border:1px solid #71baff;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;z-index:2}
   #tap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#103c70;color:white;border:1px solid #71baff;border-radius:8px;padding:14px 24px;cursor:pointer;font-weight:bold}
   [hidden]{display:none!important}
 </style>
@@ -18,7 +19,8 @@
 <main>
   <video id="film" playsinline preload="auto"></video>
   <div id="badge">ALTALUNE 360 · WATCH TOGETHER</div>
-  <button id="tap" hidden>▶ Enable Playback</button>
+  <button id="sound" type="button">🔊 Enable Sound</button>
+  <button id="tap" type="button" hidden>▶ Enable Playback</button>
   <div id="notice">Connecting to shared playback clock…</div>
 </main>
 <script>
@@ -30,6 +32,16 @@ const offset=Math.max(0,Number(q.get('offset')||0));
 const paused=q.get('paused')==='1';
 const video=document.getElementById('film');
 const tap=document.getElementById('tap');
+const sound=document.getElementById('sound');
+video.volume=1;
+video.muted=true; // allow autoplay in viewers; each viewer unmutes with a click
+sound.addEventListener('click',async()=>{
+  video.muted=false;
+  video.volume=1;
+  sound.textContent='🔊 Sound ON';
+  try { if(!paused) await video.play(); message('Sound enabled · shared playback clock active'); }
+  catch(e){message('Sound enabled. Click Enable Playback if required.'); tap.hidden=false;}
+});
 const notice=document.getElementById('notice');
 const message=t=>{notice.textContent=t;notice.hidden=false};
 const desired=()=>Math.max(0,offset+(paused?0:(Date.now()/1000-anchor)));
@@ -51,8 +63,8 @@ function align(){
 async function applyState(){
   align();
   if(paused){video.pause();message('Paused by TV owner · position '+Math.floor(offset)+'s');return;}
-  try{await video.play();tap.hidden=true;message('Shared playback clock active');}
-  catch(e){tap.hidden=false;message('Click Enable Playback if your viewer blocks autoplay');}
+  try{await video.play();tap.hidden=true;message(video.muted?'Video playing · click Enable Sound for audio':'Shared playback clock active · sound enabled');}
+  catch(e){tap.hidden=false;message('Click Enable Playback to start; then click Enable Sound');}
 }
 if(!src || !/^https:\/\//i.test(src)) {
   message('Owner must set a direct HTTPS MP4/WebM video URL.');
